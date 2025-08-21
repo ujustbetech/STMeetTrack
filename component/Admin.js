@@ -136,7 +136,7 @@ const handleCreateEvent = async (e) => {
       const phoneNumber = userData.phoneNumber;
 
       if (phoneNumber) {
-        const eventLink = `https://nt-meet-track.vercel.app/events/${uniqueId}`;
+        const eventLink = `https://st-meet-track.vercel.app/events/${uniqueId}`;
         promises.push(sendWhatsAppMessage(userData.name, eventName, eventTime, eventLink, phoneNumber));
       }
     });
@@ -294,3 +294,4 @@ const handleCreateEvent = async (e) => {
 };
 
 export default CreateEvent;
+
