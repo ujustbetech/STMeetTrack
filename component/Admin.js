@@ -294,4 +294,3 @@ const handleCreateEvent = async (e) => {
 };
 
 export default CreateEvent;
-

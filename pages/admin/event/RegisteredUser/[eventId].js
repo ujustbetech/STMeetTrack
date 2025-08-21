@@ -64,7 +64,7 @@ const RegisteredUsers = () => {
         const fetchFeedback = async () => {
           
           try {
-            const eventsCollection = collection(db, "NTmeet");
+            const eventsCollection = collection(db, "STmeet");
             const eventsSnapshot = await getDocs(eventsCollection);
             let allFeedback = [];
       
@@ -73,7 +73,7 @@ const RegisteredUsers = () => {
               const eventId = eventDoc.id;
               const eventName = eventData.name || "Unknown Event";
       
-              const usersCollection = collection(db, `NTmeet/${eventId}/registeredUsers`);
+              const usersCollection = collection(db, `STmeet/${eventId}/registeredUsers`);
               const usersSnapshot = await getDocs(usersCollection);
       
               for (const userDoc of usersSnapshot.docs) {
@@ -82,7 +82,7 @@ const RegisteredUsers = () => {
       
                 let userName = "Unknown User";
                 if (phoneNumber) {
-                  const membersCollection = collection(db, "NTMembers");
+                  const membersCollection = collection(db, "STMembers");
                   const q = query(membersCollection, where("phoneNumber", "==", phoneNumber));
                   const membersSnapshot = await getDocs(q);
                   if (!membersSnapshot.empty) {
@@ -128,7 +128,7 @@ const RegisteredUsers = () => {
       
         const updateStatus = async (feedbackId, eventId, userDocId) => {
           try {
-            const userRef = doc(db, `NTmeet/${eventId}/registeredUsers`, userDocId);
+            const userRef = doc(db, `STmeet/${eventId}/registeredUsers`, userDocId);
             const userSnapshot = await getDocs(collection(userRef, "feedback"));
             
             userSnapshot.docs.forEach(async (feedbackDoc) => {
@@ -164,7 +164,7 @@ const RegisteredUsers = () => {
         console.log("Updating event with ID:", eventId);
     
         // Check if the event exists
-        const eventDocRef = doc(db, 'NTmeet', eventId);
+        const eventDocRef = doc(db, 'STmeet', eventId);
         const eventSnap = await getDoc(eventDocRef);
     
         if (!eventSnap.exists()) {
@@ -215,7 +215,7 @@ const RegisteredUsers = () => {
   useEffect(() => {
     if (!eventId) return;  // Ensure eventId is available
   
-    const registeredUsersRef = collection(db, `NTmeet/${eventId}/registeredUsers`);
+    const registeredUsersRef = collection(db, `STmeet/${eventId}/registeredUsers`);
   
     const unsubscribe = onSnapshot(registeredUsersRef, async (snapshot) => {
       if (!snapshot.empty) {
@@ -335,7 +335,7 @@ const RegisteredUsers = () => {
   // Update feedback in Firestore
   const updateFeedback = async (userId, feedbackEntry) => {
     try {
-      const userRef = doc(db, `NTmeet/${eventId}/registeredUsers`, userId);
+      const userRef = doc(db, `STmeet/${eventId}/registeredUsers`, userId);
       
       await updateDoc(userRef, {
         feedback: arrayUnion(feedbackEntry)
@@ -374,7 +374,7 @@ const RegisteredUsers = () => {
       if (!eventId) return; // Ensure eventId exists
   
       try {
-        const eventDocRef = doc(db, "NTmeet", eventId);  // Make sure db is imported
+        const eventDocRef = doc(db, "STmeet", eventId);  // Make sure db is imported
         const eventSnap = await getDoc(eventDocRef);
   
         if (eventSnap.exists()) {

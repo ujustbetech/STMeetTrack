@@ -37,7 +37,7 @@ const UserList = () => {
 
         setLoading(true);
         try {
-            const userCollection = collection(db, "userdetails");
+            const userCollection = collection(db, "userdetail");
             const querySnapshot = await getDocs(userCollection);
 
             const allUsers = querySnapshot.docs.map((doc) => {
@@ -66,20 +66,21 @@ const UserList = () => {
     };
 
     // Add user to team
-    const addUserToTeam = async (user) => {
-        console.log("users" , user.id);
-        
-        try {
-      
-         const docRef = await addDoc(collection(db, "STMembers"), user);
-const newMember = { ...user, id: docRef.id };
+   const addUserToTeam = async (user) => {
+    console.log("users", user.id);
 
-            setTeamMembers([...teamMembers, newMember]); // Update UI
-            setSearchResults(searchResults.filter((u) => u.id !== user.id)); // Remove from search results
-        } catch (err) {
-            console.error("Error adding user:", err);
-        }
-    };
+    try {
+        await setDoc(doc(db, "STMembers", user.id), user);
+
+        const newMember = { ...user, id: user.id }; // ✅ Use user.id directly
+
+        setTeamMembers([...teamMembers, newMember]); 
+        setSearchResults(searchResults.filter((u) => u.id !== user.id)); 
+    } catch (err) {
+        console.error("Error adding user:", err);
+    }
+};
+
 
     // Remove user from team
     const removeUserFromTeam = async (userId) => {
