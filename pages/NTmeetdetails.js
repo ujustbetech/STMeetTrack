@@ -36,48 +36,45 @@ const HomePage = () => {
 const [selectedMembers, setSelectedMembers] = useState([]);
 const [stMembers, setStMembers] = useState([]); // fetch this list from Firestore or hardcode for now
 
-  useEffect(() => {
-    const storedPhoneNumber = localStorage.getItem("stnumber");
-    setPhoneNumber(storedPhoneNumber);
+useEffect(() => {
+  const storedPhoneNumber = localStorage.getItem("stnumber");
+  setPhoneNumber(storedPhoneNumber);
 
-    if (storedPhoneNumber) {
-     const getNTEventList = async () => {
-  try {
-    const eventCollection = collection(db, "STmeet");
-    const eventSnapshot = await getDocs(eventCollection);
-    let eventList = eventSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+  if (storedPhoneNumber) {
+    const getNTEventList = async () => {
+      try {
+        const eventCollection = collection(db, "STmeet");
+        const eventSnapshot = await getDocs(eventCollection);
+        let eventList = eventSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
-    eventList.sort((a, b) => b.time.seconds - a.time.seconds);
+        eventList.sort((a, b) => b.time.seconds - a.time.seconds);
 
-    // ✅ Show logic:
-    // - If createdBy is missing → admin-created → show to all
-    // - Else (user-created) → show only if invited
-   eventList = eventList.filter(event => {
-  if (!event.createdBy) {
-    return true; // admin event
+        // ✅ Show logic:
+        // - If createdBy is missing → admin-created → show to all
+        // - If createdBy matches you → show your events
+        // - If invitedMembers include you → show invited events
+        eventList = eventList.filter(event => {
+          if (!event.createdBy) return true; 
+          if (event.createdBy === storedPhoneNumber) return true; 
+          return event.invitedMembers && event.invitedMembers.includes(storedPhoneNumber);
+        });
+
+        setEventList(eventList);
+      } catch (err) {
+        console.error("Error fetching events:", err);
+      }
+    };
+
+    setIsLoggedIn(true);
+    setLoading(false);
+    fetchUserName(storedPhoneNumber);
+    getNTEventList();
   }
-  return (
-    event.createdBy === phoneNumber || // show if user is creator
-    (event.invitedMembers && event.invitedMembers.includes(phoneNumber)) // or if invited
-  );
-});
+}, []);
 
-
-    setEventList(eventList);
-  } catch (err) {
-    console.error("Error fetching events:", err);
-  }
-};
-
-      setIsLoggedIn(true);
-      setLoading(false);
-      fetchUserName(storedPhoneNumber);
-      getNTEventList()
-    }
-  }, []);
 useEffect(() => {
   const fetchSTMembers = async () => {
     try {
