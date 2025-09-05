@@ -32,43 +32,40 @@ const HomePage = () => {
   const [upcomingMonthlyMeet, setUpcomingMonthlyMeet] = useState(null);
   const [upcomingNTMeet, setUpcomingNTMeet] = useState(null);
 
-  useEffect(() => {
-    const fetchUpcomingEvents = async () => {
-      try {
-        const now = new Date();
+ useEffect(() => {
+  const fetchUpcomingEvents = async () => {
+    try {
+      const now = new Date();
 
-        // Fetch Monthly Meeting
-        const monthlySnapshot = await getDocs(collection(db, "MonthlyMeeting"));
-        const monthlyEvents = monthlySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          time: doc.data().time?.toDate?.() || new Date(0)  // convert Firestore Timestamp to JS Date
-        }));
+      // ✅ Fetch only STmeet events
+      const ntMeetSnapshot = await getDocs(collection(db, "STmeet"));
+      let ntMeetEvents = ntMeetSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        time: doc.data().time?.toDate?.() || new Date(0)
+      }));
 
-        // Filter future events and get the earliest one
-        const futureMonthlyEvents = monthlyEvents.filter(e => e.time > now);
-        futureMonthlyEvents.sort((a, b) => a.time - b.time);
-        setUpcomingMonthlyMeet(futureMonthlyEvents[0] || null);
+      // ✅ Apply filter
+      ntMeetEvents = ntMeetEvents.filter(event =>
+        (!event.createdBy) || // admin created
+        (event.invitedMembers && event.invitedMembers.includes(phoneNumber)) // user-created but invited
+      );
 
-        // Fetch NTmeet
-        const ntMeetSnapshot = await getDocs(collection(db, "STmeet"));
-        const ntMeetEvents = ntMeetSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          time: doc.data().time?.toDate?.() || new Date(0)
-        }));
+      // ✅ Keep only upcoming events
+      const futureNTEvents = ntMeetEvents.filter(e => e.time > now);
+      futureNTEvents.sort((a, b) => a.time - b.time);
 
-        const futureNTEvents = ntMeetEvents.filter(e => e.time > now);
-        futureNTEvents.sort((a, b) => a.time - b.time);
-        setUpcomingNTMeet(futureNTEvents[0] || null);
+      setUpcomingNTMeet(futureNTEvents[0] || null); // show only next upcoming
+    } catch (error) {
+      console.error("Error fetching upcoming STmeet events:", error);
+    }
+  };
 
-      } catch (error) {
-        console.error("Error fetching upcoming events:", error);
-      }
-    };
-
+  if (phoneNumber) {
     fetchUpcomingEvents();
-  }, []);
+  }
+}, [phoneNumber]);
+
   function formatTimeLeft(ms) {
     if (ms <= 0) return "Meeting Ended";
 
@@ -319,7 +316,7 @@ const handleLogin = async (e) => {
         </header>
         <section className='dashBoardMain'>
           <div className='container pageHeading'>
-            <h1>Hi {userName || 'User'}</h1>
+            <h1 style={{ color: "crimson", fontSize: "24px",  textAlign: "left" }}>Hi {userName || 'User'}</h1>
             <p>Let's Create Brand Ambassador through Contribution</p>
           </div>
 
@@ -347,75 +344,15 @@ const handleLogin = async (e) => {
           </section>
 
 
-          <section className="upcoming-events">
-  <h1>Upcoming Events</h1>
-
-  {upcomingMonthlyMeet && (
-    <div className="meetingBox">
-      <div className="suggestionDetails">
-        {(() => {
-          const now = new Date();
-          const eventDate = upcomingMonthlyMeet.time?.toDate ? upcomingMonthlyMeet.time.toDate() : upcomingMonthlyMeet.time;
-          const timeLeftMs = eventDate - now;
-          const timeLeft = timeLeftMs <= 0 ? 'Meeting Ended' : formatTimeLeft(timeLeftMs);
-          return timeLeft === 'Meeting Ended' ? (
-            <span className="meetingLable2">Meeting Done</span>
-          ) : (
-            <span className="meetingLable3">{timeLeft}</span>
-          );
-        })()}
-        <span className="suggestionTime">
-          {upcomingMonthlyMeet.time?.toDate
-            ? upcomingMonthlyMeet.time.toDate().toLocaleString('en-GB', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-  hour12: true,
-}).replace(',', ' at')
-            : upcomingMonthlyMeet.time.toLocaleString('en-GB', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-  hour12: true,
-}).replace(',', ' at')}
-        </span>
-      </div>
-
-      <div className="meetingDetailsBox">
-        <h3 className="eventName">{upcomingMonthlyMeet.Eventname || 'N/A'}</h3>
-      </div>
-
-      <div className="meetingBoxFooter">
-        <div className="viewDetails">
-          <Link href={`/MonthlyMeeting/${upcomingMonthlyMeet.id}`}>View Details</Link>
-        </div>
-
-        {(() => {
-          const now = new Date();
-          const eventDate = upcomingMonthlyMeet.time?.toDate ? upcomingMonthlyMeet.time.toDate() : upcomingMonthlyMeet.time;
-          const isWithinOneHour = eventDate > now && (eventDate - now <= 60 * 60 * 1000);
-          return isWithinOneHour && upcomingMonthlyMeet.zoomLink ? (
-            <div className="meetingLink">
-              <a href={upcomingMonthlyMeet.zoomLink} target="_blank" rel="noopener noreferrer">
-                <span>Join Meeting</span>
-              </a>
-            </div>
-          ) : null;
-        })()}
-      </div>
-    </div>
-  )}
+     <section className="upcoming-events">
+  <h1 style={{ color: "crimson", fontSize: "24px", textAlign: "left" }}>Upcoming Events</h1>
 
   {upcomingNTMeet && (
     <div className="meetingBox">
       <div className="suggestionDetails">
         {(() => {
           const now = new Date();
-          const eventDate = upcomingNTMeet.time?.toDate ? upcomingNTMeet.time.toDate() : upcomingNTMeet.time;
+          const eventDate = upcomingNTMeet.time;
           const timeLeftMs = eventDate - now;
           const timeLeft = timeLeftMs <= 0 ? 'Meeting Ended' : formatTimeLeft(timeLeftMs);
           return timeLeft === 'Meeting Ended' ? (
@@ -425,23 +362,14 @@ const handleLogin = async (e) => {
           );
         })()}
         <span className="suggestionTime">
-          {upcomingNTMeet.time?.toDate
-            ? upcomingNTMeet.time.toDate().toLocaleString('en-GB', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-  hour12: true,
-}).replace(',', ' at')
-            : upcomingNTMeet.time.toLocaleString('en-GB', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-  hour12: true,
-}).replace(',', ' at')}
+          {upcomingNTMeet.time.toLocaleString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          }).replace(',', ' at')}
         </span>
       </div>
 
@@ -456,7 +384,7 @@ const handleLogin = async (e) => {
 
         {(() => {
           const now = new Date();
-          const eventDate = upcomingNTMeet.time?.toDate ? upcomingNTMeet.time.toDate() : upcomingNTMeet.time;
+          const eventDate = upcomingNTMeet.time;
           const isWithinOneHour = eventDate > now && (eventDate - now <= 60 * 60 * 1000);
           return isWithinOneHour && upcomingNTMeet.zoomLink ? (
             <div className="meetingLink">
@@ -470,6 +398,7 @@ const handleLogin = async (e) => {
     </div>
   )}
 </section>
+
 
 
 

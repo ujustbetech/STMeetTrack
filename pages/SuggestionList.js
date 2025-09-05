@@ -240,7 +240,7 @@ const handleLogout = () => {
  <section className='dashBoardMain'>
   <div className="suggestion-list-container">
     <div className='sectionHeadings'>
-      <h2>Suggestion Tasks</h2> 
+      <h2 style={{ color: "crimson", fontSize: "20px",  textAlign: "left" }}>Suggestion Tasks</h2> 
       <div className='filterIcon' onClick={() => setShowFilter((prev) => !prev)}>
         <FaFilter />
       </div>
@@ -269,7 +269,7 @@ const handleLogout = () => {
         <div className='loader'><span className="loader2"></span></div>
       ) : (
         filteredFeedback.length === 0 ? (
-          <p>No suggestions found for "{selectedFilter}"</p>
+          <p style={{ color: "#16274f", fontSize: "16px",  textAlign: "left" }}>No suggestions found for "{selectedFilter}"</p>
         ) : (
           filteredFeedback.map((task) => (
             <div key={task.id} className="suggestionBox">

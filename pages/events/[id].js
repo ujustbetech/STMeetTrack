@@ -43,6 +43,49 @@ const EventLoginPage = () => {
 const [suggestionText, setSuggestionText] = useState("");
     const [cpPoints, setCPPoints] = useState(0);
 
+// inside component state
+const [momText, setMomText] = useState("");
+const [showMomModal, setShowMomModal] = useState(false);
+
+// function to submit MOM text
+const submitMOM = async () => {
+  if (!momText.trim()) {
+    Swal.fire({
+      icon: "warning",
+      title: "Empty MOM",
+      text: "Please enter MOM before submitting.",
+    });
+    return;
+  }
+
+  try {
+    const eventRef = doc(db, "STmeet", id);
+    await updateDoc(eventRef, {
+      momText: momText,
+      momAddedBy: userName,
+      momCreatedAt: serverTimestamp(),
+    });
+
+    setMomText("");
+    setShowMomModal(false);
+
+    Swal.fire({
+      icon: "success",
+      title: "MOM Submitted",
+      text: "Minutes of Meeting have been saved.",
+    });
+
+    // refresh event details
+    fetchEventDetails();
+  } catch (err) {
+    console.error("Error saving MOM:", err);
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Could not save MOM. Try again.",
+    });
+  }
+};
 
   const fetchFeedback = async () => {
     setLoading(true);
@@ -479,7 +522,7 @@ const handleLogout = () => {
               <img src="/ujustlogo.png" alt="Logo" className="logo" />
             </div>
         <div className='headerRight'>
-              <button onClick={() => router.push(`/cp-details/${phoneNumber}`)} class="reward-btn">
+              {/* <button onClick={() => router.push(`/cp-details/${phoneNumber}`)} class="reward-btn">
                 <div class="IconContainer">
                   <svg
                     class="box-top box"
@@ -554,7 +597,7 @@ const handleLogout = () => {
                   <div class="coin"></div>
                 </div>
                 <div class="text">CP: {cpPoints}</div>  
-              </button>
+              </button> */}
               <div className='userName'> <span>{getInitials(userName)}</span> </div>
             </div>
           </section>
@@ -612,6 +655,13 @@ const handleLogout = () => {
                     )}
                   </ul>
 
+{eventDetails?.momText && (
+  <div className="momSection">
+    <h4>Minutes of Meeting</h4>
+    <p style={{ whiteSpace: "pre-line" }}>{eventDetails.momText}</p>
+    <small style={{ color: '#e71919da' }}>— Added by {eventDetails.momAddedBy}</small>
+  </div>
+)}
 
 
                 </div>
@@ -650,32 +700,31 @@ const handleLogout = () => {
 )}
 </div>
               
-              <div className='meetingBoxFooter'>
+            <div className="meetingBoxFooter">
+  {eventDetails?.momUrl ? (
+    <div className="momLink">
+      <a href={eventDetails.momUrl} target="_blank" rel="noopener noreferrer">
+        <span>MOM</span>
+      </a>
+    </div>
+  ) : (
+    <>
+      {!currentMeetingstatus && (
+        <div className="meetingLink">
+          <a href={eventDetails?.zoomLink} target="_blank" rel="noopener noreferrer">
+            <span>Join meeting</span>
+          </a>
+        </div>
+      )}
+    </>
+  )}
 
-                {
-                  eventDetails?.momUrl ? <div className="momLink">
-                    <a href={eventDetails.momUrl} target="_blank" rel="noopener noreferrer">
-                      {/* <img src="/zoom-icon.png" alt="Zoom Link" width={30} /> */}
-                      <span>MOM</span>
-                    </a>
-                  </div> : <>{!currentMeetingstatus ?
-                    <div className="meetingLink">
-                      <a href={eventDetails?.zoomLink} target="_blank" rel="noopener noreferrer">
-                        {/* <img src="/zoom-icon.png" alt="Zoom Link" width={30} /> */}
-                        <span>Join meeting</span>
-                      </a>
-                    </div> : null}
-                  </>
-                }
-                {/* Button to Open Modal */}
-                {
-                  eventDetails?.momUrl ? <button className="addsuggestion" onClick={() => setshowpopup(true)}>
-                   Add Suggestion
-                  </button> : null
-                }
+  {/* Add MOM button */}
+  <button className="addsuggestion" onClick={() => setShowMomModal(true)}>
+    Add MOM
+  </button>
+</div>
 
-
-              </div>
             </div>
 <HeaderNav/>
 
@@ -767,6 +816,28 @@ const handleLogout = () => {
             
             )
           }
+          {showMomModal && (
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <h3>Add MOM</h3>
+      <textarea
+        rows={6}
+        value={momText}
+        onChange={(e) => setMomText(e.target.value)}
+        placeholder="Write minutes of meeting..."
+      />
+      <ul className="actionBtns">
+        <li>
+          <button onClick={submitMOM} className="m-button">Submit</button>
+        </li>
+        <li>
+          <button onClick={() => setShowMomModal(false)} className="m-button-2">Cancel</button>
+        </li>
+      </ul>
+    </div>
+  </div>
+)}
+
         </section>
       </main>
 
