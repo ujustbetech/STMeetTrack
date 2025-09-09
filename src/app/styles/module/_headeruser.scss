@@ -8,14 +8,11 @@ body {
 }
 
 .m-Header {
-    position: fixed;
+ position: fixed;
     top: 0px;
     left: 0px;
     z-index: 99;
-    background: crimson;
-    // background: url('/space.jpeg') no-repeat center center fixed;
-    -webkit-box-shadow: 0px 6px 15px 0px rgba(0, 0, 0, 0.41);
-    -moz-box-shadow: 0px 6px 15px 0px rgba(0, 0, 0, 0.41);
+    background: #fff;
     box-shadow: 0px 6px 15px 0px rgba(0, 0, 0, 0.41);
 
     .container {
@@ -25,15 +22,15 @@ body {
     }
 
     span {
-        color: #000000;
-        width: 40px;
-        height: 40px;
-        font-size: 14px;
-        color: #16274f;
-        text-align: center;
-        line-height: 40px;
-        background-color: #819eb0;
-        border-radius: 50%;
+      
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+    color: #fff;
+    text-align: center;
+    line-height: 40px;
+    background-color: crimson;
+    border-radius: 50%;
     }
 
     .userName {
@@ -43,9 +40,10 @@ body {
     }
 
     .innerLogo {
-        width: 60px;
-        line-height: 0px;
-        padding: 5px 0;
+     line-height: 0px;
+    padding: 5px 0;
+    border-radius: 5px;
+    background: #FFF;
 
         img {
          width: 100px;

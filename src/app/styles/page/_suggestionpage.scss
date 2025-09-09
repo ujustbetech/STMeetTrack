@@ -788,7 +788,8 @@ display: flex
 
 /* Individual gradients and icons */
 .in-progress {
- background: linear-gradient(135deg, #d07a84ed, #de3245);
+background: #ffffff;
+background: radial-gradient(circle,rgba(255, 255, 255, 1) 0%, rgba(194, 184, 184, 1) 100%);
 
 }
 
@@ -797,9 +798,11 @@ display: flex
 }
 
 .on-hold {
-  background: linear-gradient(135deg, #fef3c7, #f59e0b);
+background: #ffffff;
+background: radial-gradient(circle,rgba(255, 255, 255, 1) 0%, rgba(194, 184, 184, 1) 100%);
 }
 
 .completed {
-  background: linear-gradient(135deg, #d1fae5, #10b981);
+  background: #ffffff;
+background: radial-gradient(circle,rgba(255, 255, 255, 1) 0%, rgba(194, 184, 184, 1) 100%);
 }
