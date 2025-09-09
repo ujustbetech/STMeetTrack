@@ -192,7 +192,7 @@ const handleLogin = async (e) => {
       getNTEventList();
       setLoading(false);
     } else {
-      setError('You are not a NT Member.');
+      setError('You are not a ST Member.');
     }
   } catch (err) {
     console.error('❌ Error checking phone number:', err);
@@ -316,8 +316,8 @@ const handleLogin = async (e) => {
         </header>
         <section className='dashBoardMain'>
           <div className='container pageHeading'>
-            <h1 style={{ color: "crimson", fontSize: "24px",  textAlign: "left" }}>Hi {userName || 'User'}</h1>
-            <p>Let's Create Brand Ambassador through Contribution</p>
+            <h1 style={{ color: "white", fontSize: "24px",  textAlign: "left" }}>Hi {userName || 'User'}</h1>
+            {/* <p>Let's Create Brand Ambassador through Contribution</p> */}
           </div>
 
 
@@ -335,17 +335,17 @@ const handleLogin = async (e) => {
                 <p className="label">Suggestions</p>
               </div>
             </Link>
-            <Link href="/SuggestionList">
+            {/* <Link href="/SuggestionList">
               <div className="summary-card completed" style={{ cursor: 'pointer' }}>
                 <p className="count">{pendingSuggestionCount}</p>
                 <p className="label">Pending Suggestions</p>
               </div>
-            </Link>
+            </Link> */}
           </section>
 
 
      <section className="upcoming-events">
-  <h1 style={{ color: "crimson", fontSize: "24px", textAlign: "left" }}>Upcoming Events</h1>
+  <h1 style={{ color: "white", fontSize: "24px", textAlign: "left" }}>Upcoming Events</h1>
 
   {upcomingNTMeet && (
     <div className="meetingBox">

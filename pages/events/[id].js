@@ -10,9 +10,15 @@ import { IoMdClose } from "react-icons/io";
 import Modal from 'react-modal';
 import { createMarkup } from '../../component/util';
 import HeaderNav from '../../component/HeaderNav';
+import { Timestamp } from "firebase/firestore";
+import Link from "next/link";
 
 import Swal from 'sweetalert2';
 
+import dynamic from "next/dynamic"; 
+// ReactQuill needs dynamic import in Next.js
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+import "react-quill/dist/quill.snow.css";
 
 
 const EventLoginPage = () => {
@@ -43,49 +49,38 @@ const EventLoginPage = () => {
 const [suggestionText, setSuggestionText] = useState("");
     const [cpPoints, setCPPoints] = useState(0);
 
+// state
+
+const [isEditingMom, setIsEditingMom] = useState(false);
+
+
+// function to delete MOM
+const deleteMOM = async () => {
+  try {
+    const eventRef = doc(db, "STmeet", id);
+    await updateDoc(eventRef, {
+      momText: "",
+      momAddedBy: "",
+      momCreatedAt: null,
+    });
+
+    Swal.fire({
+      icon: "success",
+      title: "Deleted",
+      text: "MOM has been deleted.",
+    });
+
+    fetchEventDetails();
+  } catch (err) {
+    console.error("Error deleting MOM:", err);
+  }
+};
+
 // inside component state
 const [momText, setMomText] = useState("");
 const [showMomModal, setShowMomModal] = useState(false);
 
 // function to submit MOM text
-const submitMOM = async () => {
-  if (!momText.trim()) {
-    Swal.fire({
-      icon: "warning",
-      title: "Empty MOM",
-      text: "Please enter MOM before submitting.",
-    });
-    return;
-  }
-
-  try {
-    const eventRef = doc(db, "STmeet", id);
-    await updateDoc(eventRef, {
-      momText: momText,
-      momAddedBy: userName,
-      momCreatedAt: serverTimestamp(),
-    });
-
-    setMomText("");
-    setShowMomModal(false);
-
-    Swal.fire({
-      icon: "success",
-      title: "MOM Submitted",
-      text: "Minutes of Meeting have been saved.",
-    });
-
-    // refresh event details
-    fetchEventDetails();
-  } catch (err) {
-    console.error("Error saving MOM:", err);
-    Swal.fire({
-      icon: "error",
-      title: "Error",
-      text: "Could not save MOM. Try again.",
-    });
-  }
-};
 
   const fetchFeedback = async () => {
     setLoading(true);
@@ -188,6 +183,27 @@ const submitMOM = async () => {
     checkRegistrationStatus();
   }, [id]); // Runs when event ID changes
 
+const submitMOM = async () => {
+  if (!momText.trim()) return;
+
+  const momEntry = {
+    text: momText,
+    addedBy: userName,
+    createdAt: Timestamp.now(), // ✅ works inside arrayUnion
+  };
+
+  try {
+    const eventRef = doc(db, "STmeet", id);
+    await updateDoc(eventRef, {
+      momEntries: arrayUnion(momEntry),
+      momLastUpdated: serverTimestamp(), // ✅ keep last update timestamp
+    });
+    setShowMomModal(false);
+    setMomText("");
+  } catch (err) {
+    console.error("Error saving MOM:", err);
+  }
+};
 
   const handleAccept = async () => {
     if (id) {
@@ -309,7 +325,8 @@ const submitMOM = async () => {
       const eventRef = doc(db, 'STmeet', id);
       const eventDoc = await getDoc(eventRef);
       if (eventDoc.exists()) {
-        setEventDetails(eventDoc.data());
+      setEventDetails({ id: eventDoc.id, ...eventDoc.data() });
+
         console.log("get single user details", eventDoc.data());
 
       } else {
@@ -655,13 +672,7 @@ const handleLogout = () => {
                     )}
                   </ul>
 
-{eventDetails?.momText && (
-  <div className="momSection">
-    <h4>Minutes of Meeting</h4>
-    <p style={{ whiteSpace: "pre-line" }}>{eventDetails.momText}</p>
-    <small style={{ color: '#e71919da' }}>— Added by {eventDetails.momAddedBy}</small>
-  </div>
-)}
+
 
 
                 </div>
@@ -699,7 +710,8 @@ const handleLogout = () => {
   </div>
 )}
 </div>
-              
+
+
             <div className="meetingBoxFooter">
   {eventDetails?.momUrl ? (
     <div className="momLink">
@@ -724,6 +736,38 @@ const handleLogout = () => {
     Add MOM
   </button>
 </div>
+<h3>Minutes of Meeting</h3>
+{eventDetails?.momEntries?.length > 0 && (
+  <div className="momSection">
+    {eventDetails.momEntries.slice(0, 3).map((entry, index) => (
+      <div key={index} className="momEntry">
+        <div
+          className="momContent"
+          dangerouslySetInnerHTML={{ __html: entry.text }}
+        />
+        <small style={{ color: "#e71919da" }}>
+          — Added by {entry.addedBy} on{" "}
+          {entry.createdAt?.toDate
+            ? entry.createdAt.toDate().toLocaleString()
+            : ""}
+        </small>
+        <hr />
+      </div>
+    ))}
+
+    {/* ✅ View More button */}
+  {eventDetails?.momEntries?.length > 2 && (
+  <div className="viewMoreWrapper">
+    <Link href={`/mom/${eventDetails.id}`}>
+      <button className="viewMoreBtn">View More →</button>
+    </Link>
+  </div>
+)}
+
+  </div>
+)}
+
+   
 
             </div>
 <HeaderNav/>
@@ -816,22 +860,21 @@ const handleLogout = () => {
             
             )
           }
-          {showMomModal && (
+ {showMomModal && (
   <div className="modal-overlay">
     <div className="modal-content">
-      <h3>Add MOM</h3>
-      <textarea
-        rows={6}
-        value={momText}
-        onChange={(e) => setMomText(e.target.value)}
-        placeholder="Write minutes of meeting..."
-      />
+      <h3>{isEditingMom ? "Edit MOM" : "Add MOM"}</h3>
+      <ReactQuill value={momText} onChange={setMomText} theme="snow" />
       <ul className="actionBtns">
         <li>
-          <button onClick={submitMOM} className="m-button">Submit</button>
+          <button onClick={submitMOM} className="m-button">
+            {isEditingMom ? "Update" : "Submit"}
+          </button>
         </li>
         <li>
-          <button onClick={() => setShowMomModal(false)} className="m-button-2">Cancel</button>
+          <button onClick={() => { setShowMomModal(false); setIsEditingMom(false); }} className="m-button-2">
+            Cancel
+          </button>
         </li>
       </ul>
     </div>

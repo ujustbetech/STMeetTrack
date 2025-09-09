@@ -336,12 +336,17 @@ selectedMembers.forEach(async (memberPhone) => {
 
         <section className='dashBoardMain'>
           <div className='container pageHeading'>
-         <h2 style={{ color: "crimson", fontSize: "20px",  textAlign: "left" }}>
+         <h2 style={{ color: "white", fontSize: "20px",  textAlign: "left" }}>
   Strategic Team Meetings
 </h2>
+<button onClick={() => setShowModal(true)}  className="Btn">
+  
+  <div className="sign">+</div>
+  
+  <div className="text">Create</div>
+</button>
 
-            <button onClick={() => setShowModal(true)} className="meetingLink">+ Create Event</button>
-          </div>
+           </div>
 
           {/* Event Creation Modal */}
         {showModal && (
@@ -372,31 +377,62 @@ selectedMembers.forEach(async (memberPhone) => {
           required 
         />
 
-        <textarea 
-          placeholder="Agenda" 
-          value={agendaPoints[0]} 
-          onChange={(e) => setAgendaPoints([e.target.value])}
-        ></textarea>
+        {/* ✅ Dynamic Agenda Points */}
+      {/* Agenda */}
+<label>Agenda Points:</label>
+{agendaPoints.map((point, i) => (
+  <div key={i} className="agenda-item">
+    <input
+      type="text"
+      value={point}
+      onChange={(e) => {
+        const updated = [...agendaPoints];
+        updated[i] = e.target.value;
+        setAgendaPoints(updated);
+      }}
+      placeholder={`Agenda ${i + 1}`}
+    />
+    <button type="button" onClick={() => {
+      setAgendaPoints(agendaPoints.filter((_, idx) => idx !== i));
+    }}>✕</button>
+  </div>
+))}
+<button type="button" onClick={() => setAgendaPoints([...agendaPoints, ""])} className="add-agenda-btn">
+  ➕ Add Agenda
+</button>
 
-      <label>Select ST Members:</label>
-<div className="st-members-list">
-  {stMembers.map((member) => (
-    <div key={member.phone} className="st-member-item">
-      <input
-        type="checkbox"
-        value={member.phone}
-        checked={selectedMembers.includes(member.phone)}
-        onChange={(e) => {
-          if (e.target.checked) {
-            setSelectedMembers([...selectedMembers, member.phone]);
-          } else {
-            setSelectedMembers(
-              selectedMembers.filter((num) => num !== member.phone)
-            );
-          }
-        }}
-      />
-      <span>{member.name} ({member.phone})</span>
+{/* Search & Select Members */}
+<label>Select ST Members:</label>
+<input
+  type="text"
+  className="member-search"
+  placeholder="Search member..."
+  onChange={(e) => {
+    const search = e.target.value.toLowerCase();
+    setStMembers(allMembers.filter((m) =>
+      m.name.toLowerCase().includes(search) ||
+      m.phone.includes(search)
+    ));
+  }}
+/>
+
+<div className="selected-members">
+  {selectedMembers.map((phone) => {
+    const member = stMembers.find((m) => m.phone === phone);
+    return (
+      <span key={phone} className="tag">
+        {member?.name} ({phone})
+        <button type="button" onClick={() => setSelectedMembers(selectedMembers.filter((p) => p !== phone))}>✕</button>
+      </span>
+    );
+  })}
+</div>
+
+<div className="member-dropdown">
+  {stMembers.filter((m) => !selectedMembers.includes(m.phone)).map((member) => (
+    <div key={member.phone} className="dropdown-item"
+      onClick={() => setSelectedMembers([...selectedMembers, member.phone])}>
+      {member.name} ({member.phone})
     </div>
   ))}
 </div>
@@ -417,6 +453,7 @@ selectedMembers.forEach(async (memberPhone) => {
     </div>
   </div>
 )}
+
 
           <div className='container eventList'>
             {eventList ? eventList?.map(doc => (
