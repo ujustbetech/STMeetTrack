@@ -4,22 +4,18 @@ import { collection, getDocs, deleteDoc, doc, setDoc } from "firebase/firestore"
 import "../src/app/styles/main.scss";
 
 const UserList = () => {
-  const [searchInput, setSearchInput] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [newUser, setNewUser] = useState({ name: "", phoneNumber: "", role: "" });
 
-  // Fetch already added team members
+  // Fetch team members
   useEffect(() => {
     const fetchTeamMembers = async () => {
       try {
         const teamCollection = collection(db, "STMembers");
         const teamSnapshot = await getDocs(teamCollection);
-        const teamList = teamSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
+        const teamList = teamSnapshot.docs.map((docSnap) => ({
+          id: docSnap.id, // phone number is the doc ID
+          ...docSnap.data(),
         }));
         setTeamMembers(teamList);
       } catch (err) {
@@ -29,29 +25,6 @@ const UserList = () => {
     fetchTeamMembers();
   }, []);
 
-  // Add user to team
-  const addUserToTeam = async (user) => {
-    try {
-      await setDoc(doc(db, "STMembers", user.id), user);
-      const newMember = { ...user, id: user.id };
-
-      setTeamMembers([...teamMembers, newMember]);
-      setSearchResults(searchResults.filter((u) => u.id !== user.id));
-    } catch (err) {
-      console.error("Error adding user:", err);
-    }
-  };
-
-  // Remove user from team
-  const removeUserFromTeam = async (userId) => {
-    try {
-      await deleteDoc(doc(db, "STMembers", userId));
-      setTeamMembers(teamMembers.filter((user) => user.id !== userId));
-    } catch (err) {
-      console.error("Error deleting user:", err);
-    }
-  };
-
   // Add user manually
   const handleManualAdd = async () => {
     if (!newUser.name.trim() || !newUser.phoneNumber.trim()) {
@@ -59,16 +32,36 @@ const UserList = () => {
       return;
     }
 
-    const userId = Date.now().toString(); // unique id
+    const userId = newUser.phoneNumber; // phone number as doc ID
+
     const user = {
-      id: userId,
+      id: userId, // ✅ also store it inside the document
       name: newUser.name,
       phoneNumber: newUser.phoneNumber,
       role: newUser.role || "User",
     };
 
-    await addUserToTeam(user);
-    setNewUser({ name: "", phoneNumber: "", role: "" }); // reset form
+    try {
+      const userRef = doc(db, "STMembers", userId);
+      await setDoc(userRef, user, { merge: true }); // store id inside doc
+
+      alert("User added successfully!");
+      setTeamMembers([...teamMembers, user]);
+      setNewUser({ name: "", phoneNumber: "", role: "" });
+    } catch (error) {
+      console.error("Error adding user:", error);
+      alert("Failed to add user. Try again.");
+    }
+  };
+
+  // Remove user
+  const removeUserFromTeam = async (userId) => {
+    try {
+      await deleteDoc(doc(db, "STMembers", userId));
+      setTeamMembers(teamMembers.filter((user) => user.id !== userId));
+    } catch (err) {
+      console.error("Error deleting user:", err);
+    }
   };
 
   return (
@@ -80,70 +73,64 @@ const UserList = () => {
 
       {/* Add User Manually */}
       <h3>Add User Manually</h3>
-         <ul>
-          <li className='form-row'>
-            <h4>Name<sup>*</sup></h4>
-            <div className='multipleitem'>
-              
-    
-        <input
-          type="text"
-          placeholder="Name"
-          value={newUser.name}
-          onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-        />
-        </div>
+      <ul>
+        <li className="form-row">
+          <h4>Name<sup>*</sup></h4>
+          <div className="multipleitem">
+            <input
+              type="text"
+              placeholder="Name"
+              value={newUser.name}
+              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+            />
+          </div>
         </li>
-        </ul>
-           <ul>
-          <li className='form-row'>
-            <h4>Mobile No<sup>*</sup></h4>
-            <div className='multipleitem'>
-              
-        <input
-          type="text"
-          placeholder="Mobile No"
-          value={newUser.phoneNumber}
-          onChange={(e) => setNewUser({ ...newUser, phoneNumber: e.target.value })}
-        />
-        </div>
+        <li className="form-row">
+          <h4>Mobile No<sup>*</sup></h4>
+          <div className="multipleitem">
+            <input
+              type="text"
+              placeholder="Mobile No"
+              value={newUser.phoneNumber}
+              onChange={(e) =>
+                setNewUser({ ...newUser, phoneNumber: e.target.value })
+              }
+            />
+          </div>
         </li>
-        </ul>
-           <ul>
-          <li className='form-row'>
-            <h4>Role<sup>*</sup></h4>
-            <div className='multipleitem'>
-              
-        <input
-          type="text"
-          placeholder="Role (optional)"
-          value={newUser.role}
-          onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-        />
-        </div>
+        <li className="form-row">
+          <h4>Role</h4>
+          <div className="multipleitem">
+            <input
+              type="text"
+              placeholder="Role (optional)"
+              value={newUser.role}
+              onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+            />
+          </div>
         </li>
-        </ul>
-        
-        <button className="m-button-7" onClick={handleManualAdd}>
-          Add User
-        </button>
-      
-      {/* Existing Team Members */}
+      </ul>
+
+      <button className="m-button-7" onClick={handleManualAdd}>
+        Add User
+      </button>
+
+      {/* Team Members Table */}
       {teamMembers.length > 0 && (
         <table className="table-class">
           <thead>
             <tr>
               <th>Name</th>
-              <th>Mobile No</th>
+              <th>Mobile No (ID)</th>
               <th>Role</th>
-              <th>Actions</th>
+              <th>Remove</th>
             </tr>
           </thead>
           <tbody>
             {teamMembers.map((user) => (
               <tr key={user.id}>
                 <td>{user.name}</td>
-                <td>{user.phoneNumber}</td>
+                <td>{user.id}</td> {/* phone number as ID */}
                 <td>{user.role}</td>
                 <td>
                   <button

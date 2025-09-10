@@ -8,7 +8,7 @@ import {
   doc,
   addDoc,
   query,
-  orderBy,
+  orderBy,Timestamp
 } from 'firebase/firestore';
 import Link from 'next/link'
 //import '/pages/events/event.scss';
@@ -21,17 +21,19 @@ import { useRouter } from 'next/router';
 import { BiComment } from "react-icons/bi";
 
 const SuggestionList = () => {
-
+   const [showpopup, setshowpopup] = useState(false); 
   const [userName, setUserName] = useState('');
    const router = useRouter();
   const [commentTexts, setCommentTexts] = useState({}); // store comment text per suggestion
 const [isModalOpen, setIsModalOpen] = useState(false);
 const [activeSuggestionId, setActiveSuggestionId] = useState(null);
+  const [eventDetails, setEventDetails] = useState(null);
 const [showFilter, setShowFilter] = useState(false);
 const [suggestions, setSuggestions] = useState([]);
 const [filteredFeedback, setFilteredFeedback] = useState([]);
 const [selectedFilter, setSelectedFilter] = useState("All");
 const [activeIndex, setActiveIndex] = useState(0);
+const [suggestionText, setSuggestionText] = useState("");
 const [loading, setLoading] = useState(true);
  const filterRef = useRef(null);
 const fetchSuggestions = async () => {
@@ -82,6 +84,26 @@ const fetchSuggestions = async () => {
   }
 };
 
+const submitAddFeedback = async () => {
+  if (!suggestionText.trim()) return;
+
+  const newSuggestion = {
+    taskDescription: suggestionText,
+    createdAt: Timestamp.now(),
+    createdBy: userName || "Anonymous",
+    date: Timestamp.now(),
+    eventName: eventDetails?.Eventname || "Common Suggestion",
+    status: "Pending",
+  };
+
+  try {
+    await addDoc(collection(db, "suggestions"), newSuggestion);
+    setSuggestionText("");
+    setshowpopup(false);
+  } catch (error) {
+    console.error("Error adding suggestion:", error);
+  }
+};
 
 const handleClick = (index, filter) => {
   setActiveIndex(index);
@@ -168,7 +190,6 @@ const fetchUserName = async (phoneNumber) => {
   if (phone) fetchUserName(phone);
   fetchSuggestions();
 }, []);
-
 const handleLogout = () => {
   Swal.fire({
     title: 'Are you sure?',
@@ -180,7 +201,7 @@ const handleLogout = () => {
   }).then((result) => {
     if (result.isConfirmed) {
       localStorage.removeItem('stnumber');
-      window.location.reload(); // or navigate to login
+      router.push("/"); // ✅ redirect to homepage
     }
   });
 };
@@ -240,10 +261,12 @@ const handleLogout = () => {
  <section className='dashBoardMain'>
   <div className="suggestion-list-container">
     <div className='sectionHeadings'>
-      <h2 style={{ color: "crimson", fontSize: "20px",  textAlign: "left" }}>Suggestion Tasks</h2> 
+      <h2 style={{ color: "white", fontSize: "20px",  textAlign: "left" }}>Suggestion Tasks</h2> 
       <div className='filterIcon' onClick={() => setShowFilter((prev) => !prev)}>
         <FaFilter />
       </div>
+ 
+
     </div>
 
     {/* Filter dropdown */}

@@ -962,16 +962,14 @@ className='actionBtn blueclr'
   return (
     <>
       <main className="pageContainer">
-        <header className='Mains m-Headers'>
+         <header className='Main m-Header'>
           <section className='container'>
-            <div className='innerLogo' onClick={() => router.push('/')}>
+            <div className='innerLogo'>
               <img src="/ujustlogo.png" alt="Logo" className="logo" />
             </div>
-            <div>
-                <div className="userName" onClick={handleLogout} style={{ cursor: 'pointer' }}>
-  <span>{getInitials(userName)}</span>
-</div>
-
+            <div className='headerRight'>
+              <div className='userName'> <span>{getInitials(userName)}</span> </div>
+              {/* <button onClick={handleLogout} className="logoutBtn">Logout</button> */}
             </div>
           </section>
         </header>

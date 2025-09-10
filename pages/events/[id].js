@@ -36,8 +36,10 @@ const EventLoginPage = () => {
   const [showModal, setShowModal] = useState(false); // State to show/hide modal
   const [responseStatus, setResponseStatus] = useState(true);
   const [declineReason, setDeclineReason] = useState('');
-  const [showDeclineModal, setShowDeclineModal] = useState(true);
-  const [showResponseModal, setShowResponseModal] = useState(true);
+ 
+  const [showResponseModal, setShowResponseModal] = useState(true); 
+const [showDeclineModal, setShowDeclineModal] = useState(false); 
+
   const [showAcceptPopUp, setshowAcceptPopUp] = useState(false);
   const [showDeclinePopUp, setshowDeclinePopUp] = useState(false);
   const [addFeedbackModalIsOpen, setAddFeedbackModalIsOpen] = useState(false);
@@ -48,6 +50,7 @@ const EventLoginPage = () => {
   const [currentMeetingstatus, setcurrentMeetingstatus] = useState(null);
 const [suggestionText, setSuggestionText] = useState("");
     const [cpPoints, setCPPoints] = useState(0);
+const [isMomModalOpen, setIsMomModalOpen] = useState(false);
 
 // state
 
@@ -736,35 +739,36 @@ const handleLogout = () => {
     Add MOM
   </button>
 </div>
-<h3>Minutes of Meeting</h3>
 {eventDetails?.momEntries?.length > 0 && (
-  <div className="momSection">
-    {eventDetails.momEntries.slice(0, 3).map((entry, index) => (
-      <div key={index} className="momEntry">
-        <div
-          className="momContent"
-          dangerouslySetInnerHTML={{ __html: entry.text }}
-        />
-        <small style={{ color: "#e71919da" }}>
-          — Added by {entry.addedBy} on{" "}
-          {entry.createdAt?.toDate
-            ? entry.createdAt.toDate().toLocaleString()
-            : ""}
-        </small>
-        <hr />
-      </div>
-    ))}
+  <>
+    <h3>Minutes of Meeting</h3>
+    <div className="momSection">
+      {eventDetails.momEntries.slice(0, 3).map((entry, index) => (
+        <div key={index} className="momEntry">
+          <div
+            className="momContent"
+            dangerouslySetInnerHTML={{ __html: entry.text }}
+          />
+          <small style={{ color: "#e71919da" }}>
+            — Added by {entry.addedBy} on{" "}
+            {entry.createdAt?.toDate
+              ? entry.createdAt.toDate().toLocaleString()
+              : ""}
+          </small>
+          <hr />
+        </div>
+      ))}
 
-    {/* ✅ View More button */}
-  {eventDetails?.momEntries?.length > 2 && (
-  <div className="viewMoreWrapper">
-    <Link href={`/mom/${eventDetails.id}`}>
-      <button className="viewMoreBtn">View More →</button>
-    </Link>
-  </div>
-)}
-
-  </div>
+      {/* ✅ Show View More button only if more than 3 entries */}
+      {eventDetails.momEntries.length > 3 && (
+        <div className="viewMoreWrapper">
+          <Link href={`/mom/${eventDetails.id}`}>
+            <button className="viewMoreBtn">View More →</button>
+          </Link>
+        </div>
+      )}
+    </div>
+  </>
 )}
 
    
@@ -792,49 +796,75 @@ const handleLogout = () => {
           <div className={(showResponseModal ? 'modal-overlay' : 'modal-overlay hide')}>
             {/* Accept/Decline Modal */}
 
-            {/* Accept */}
-            {showResponseModal && (
-              <div className={(showAcceptPopUp ? 'modal-content' : 'modadl-content hide')} >
-                <h2>Are you Available for the Meeting?</h2>
-                {/* <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy</p> */}
-                <ul className='actionBtns'>
-                  <li>
-                    <button className="m-button" onClick={handleAccept}>
-                      Yes
-                    </button>
-                  </li>
-                  <li>
-                    <button className="m-button-2" onClick={handleDecline}>
-                      No
-                    </button>
-                  </li>
-                </ul>
-              </div>
-            )}
+      {/* Step 1: Are you available? */}
+{showResponseModal && !showDeclineModal && (
+  <div
+    className="modal-overlay"
+    onClick={() => setShowResponseModal(false)} // close if click outside
+  >
+    <div
+      className="modal-content"
+      onClick={(e) => e.stopPropagation()} // stop close on inside click
+    >
+      <h2>Are you Available for the Meeting?</h2>
+      <ul className="actionBtns">
+        <li>
+          <button className="m-button" onClick={handleAccept}>
+            Yes
+          </button>
+        </li>
+        <li>
+          <button
+            className="m-button-2"
+            onClick={() => {
+              setShowDeclineModal(true);   // open decline modal
+            }}
+          >
+            No
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+)}
 
-            {/* Decline Reason Modal */}
-            {showDeclineModal && (
-              <div className={(showDeclinePopUp ? 'modal-content' : 'modal-content hide')}>
-                <div className='contentBox'>
-                  <h2>Reason for Declining</h2>
-                  <textarea
-                    value={declineReason}
-                    onChange={(e) => setDeclineReason(e.target.value)}
-                    placeholder="Enter reason..."
-                  />
-                  <ul className='actionBtns'>
-                    <li>
-                      <button onClick={submitDeclineReason} className='m-button'>Submit</button>
-                    </li>
-                    <li>
-                      <button onClick={handleCancelDecline} className='m-button-2'>Cancel</button>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            )}
-          </div>
-
+{/* Step 2: Decline reason */}
+{showDeclineModal && (
+  <div
+    className="modal-overlay"
+    onClick={() => setShowDeclineModal(false)} // close if click outside
+  >
+    <div
+      className="modal-content"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="contentBox">
+        <h2>Reason for Declining</h2>
+        <textarea
+          value={declineReason}
+          onChange={(e) => setDeclineReason(e.target.value)}
+          placeholder="Enter reason..."
+        />
+        <ul className="actionBtns">
+          <li>
+            <button onClick={submitDeclineReason} className="m-button">
+              Submit
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => setShowDeclineModal(false)}
+              className="m-button-2"
+            >
+              Cancel
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+)}
+</div>
           {/* Feedback Form UI */}
           {showpopup && (
           <div className="modal-overlay">
@@ -860,11 +890,36 @@ const handleLogout = () => {
             
             )
           }
- {showMomModal && (
-  <div className="modal-overlay">
-    <div className="modal-content">
+          {isMomModalOpen && (
+  <div 
+    className="modal-overlay"
+    onClick={() => setIsMomModalOpen(false)} // closes when background is clicked
+  >
+    <div 
+      className="modal-content"
+      onClick={(e) => e.stopPropagation()} // prevents closing when clicking inside
+    >
+      {/* Your modal form content */}
+    </div>
+  </div>
+)}
+
+{showMomModal && (
+  <div
+    className="modal-overlay"
+    onClick={() => {
+      setShowMomModal(false);
+      setIsEditingMom(false);
+    }} // close when clicking outside
+  >
+    <div
+      className="modal-content"
+      onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+    >
       <h3>{isEditingMom ? "Edit MOM" : "Add MOM"}</h3>
+
       <ReactQuill value={momText} onChange={setMomText} theme="snow" />
+
       <ul className="actionBtns">
         <li>
           <button onClick={submitMOM} className="m-button">
@@ -872,7 +927,13 @@ const handleLogout = () => {
           </button>
         </li>
         <li>
-          <button onClick={() => { setShowMomModal(false); setIsEditingMom(false); }} className="m-button-2">
+          <button
+            onClick={() => {
+              setShowMomModal(false);
+              setIsEditingMom(false);
+            }}
+            className="m-button-2"
+          >
             Cancel
           </button>
         </li>
@@ -880,6 +941,7 @@ const handleLogout = () => {
     </div>
   </div>
 )}
+
 
         </section>
       </main>

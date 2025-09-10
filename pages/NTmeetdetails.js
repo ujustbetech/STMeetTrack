@@ -35,6 +35,7 @@ const HomePage = () => {
   const [isAdmin, setIsAdmin] = useState(false);
 const [selectedMembers, setSelectedMembers] = useState([]);
 const [stMembers, setStMembers] = useState([]); // fetch this list from Firestore or hardcode for now
+const [allMembers, setAllMembers] = useState([]);
 
 useEffect(() => {
   const storedPhoneNumber = localStorage.getItem("stnumber");
@@ -84,7 +85,8 @@ useEffect(() => {
         phone: doc.data().phoneNumber,
         name: doc.data().name,
       }));
-      setStMembers(membersList);
+      setAllMembers(membersList);   // store original
+      setStMembers(membersList);    // initialize filtered with same list
     } catch (error) {
       console.error("Error fetching ST Members:", error);
     }
@@ -92,6 +94,7 @@ useEffect(() => {
 
   fetchSTMembers();
 }, []);
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -266,7 +269,10 @@ const handleCreateEvent = async (e) => {
 
     // Call Meta API to send WhatsApp message
 selectedMembers.forEach(async (memberPhone) => {
-  await sendWhatsAppMessage(userName, eventName, eventTime, zoomLink, memberPhone);
+  const member = stMembers.find((m) => m.phone === memberPhone);
+  const memberName = member?.name || "Member"; // fallback if not found
+
+  await sendWhatsAppMessage(memberName, eventName, eventTime, zoomLink, memberPhone);
 });
 
 
@@ -336,9 +342,51 @@ selectedMembers.forEach(async (memberPhone) => {
 
         <section className='dashBoardMain'>
           <div className='container pageHeading'>
-         <h2 style={{ color: "white", fontSize: "20px",  textAlign: "left" }}>
-  Strategic Team Meetings
-</h2>
+             <div className='sectionHeading'>
+                    <h2 style={{ color: "white", fontSize: "20px",  textAlign: "left" }}>  Strategic Team Meetings</h2> 
+  
+  <button onClick={() => setshowpopup(true)} className="addsuggestion">
+  Add Suggestion
+</button>
+
+{showpopup && (
+  <div
+    className="modal-overlay"
+    onClick={() => setshowpopup(false)} // close when clicking outside
+  >
+    <div
+      className="modal-content"
+      onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+    >
+      <h3>Add Suggestion</h3>
+
+      <textarea
+        rows={4}
+        value={suggestionText}
+        placeholder="Write your comment..."
+        onChange={(e) => setSuggestionText(e.target.value)}
+      />
+
+      <ul className="actionBtns">
+        <li>
+          <button onClick={submitAddFeedback} className="m-button">
+            Submit
+          </button>
+        </li>
+        <li>
+          <button
+            onClick={() => setshowpopup(false)}
+            className="m-button-2"
+          >
+            Cancel
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+)}
+
+</div>
 <button onClick={() => setShowModal(true)}  className="Btn">
   
   <div className="sign">+</div>
@@ -349,9 +397,15 @@ selectedMembers.forEach(async (memberPhone) => {
            </div>
 
           {/* Event Creation Modal */}
-        {showModal && (
-  <div className="modal-overlay">
-    <div className="modal-content">
+{showModal && (
+  <div 
+    className="modal-overlay"
+    onClick={() => setShowModal(false)} // ✅ close on clicking outside
+  >
+    <div 
+      className="modal-content"
+      onClick={(e) => e.stopPropagation()} // ✅ prevent closing when clicking inside
+    >
       <h3>Create Event</h3>
       <form onSubmit={handleCreateEvent}>
         <input 
@@ -377,65 +431,67 @@ selectedMembers.forEach(async (memberPhone) => {
           required 
         />
 
-        {/* ✅ Dynamic Agenda Points */}
-      {/* Agenda */}
-<label>Agenda Points:</label>
-{agendaPoints.map((point, i) => (
-  <div key={i} className="agenda-item">
-    <input
-      type="text"
-      value={point}
-      onChange={(e) => {
-        const updated = [...agendaPoints];
-        updated[i] = e.target.value;
-        setAgendaPoints(updated);
-      }}
-      placeholder={`Agenda ${i + 1}`}
-    />
-    <button type="button" onClick={() => {
-      setAgendaPoints(agendaPoints.filter((_, idx) => idx !== i));
-    }}>✕</button>
-  </div>
-))}
-<button type="button" onClick={() => setAgendaPoints([...agendaPoints, ""])} className="add-agenda-btn">
-  ➕ Add Agenda
-</button>
+        {/* Agenda Section */}
+        <label>Agenda Points:</label>
+        {agendaPoints.map((point, i) => (
+          <div key={i} className="agenda-item">
+            <input
+              type="text"
+              value={point}
+              onChange={(e) => {
+                const updated = [...agendaPoints];
+                updated[i] = e.target.value;
+                setAgendaPoints(updated);
+              }}
+              placeholder={`Agenda ${i + 1}`}
+            />
+            <button type="button" onClick={() => {
+              setAgendaPoints(agendaPoints.filter((_, idx) => idx !== i));
+            }}>✕</button>
+          </div>
+        ))}
+        <button type="button" onClick={() => setAgendaPoints([...agendaPoints, ""])} className="add-agenda-btn">
+          ➕ Add Agenda
+        </button>
 
-{/* Search & Select Members */}
-<label>Select ST Members:</label>
-<input
+        {/* Members Section */}
+        <label>Select ST Members:</label>
+   <input
   type="text"
   className="member-search"
   placeholder="Search member..."
   onChange={(e) => {
     const search = e.target.value.toLowerCase();
-    setStMembers(allMembers.filter((m) =>
-      m.name.toLowerCase().includes(search) ||
-      m.phone.includes(search)
-    ));
+    setStMembers(
+      allMembers.filter((m) =>
+        m.name.toLowerCase().includes(search) ||
+        m.phone.includes(search)
+      )
+    );
   }}
 />
 
-<div className="selected-members">
-  {selectedMembers.map((phone) => {
-    const member = stMembers.find((m) => m.phone === phone);
-    return (
-      <span key={phone} className="tag">
-        {member?.name} ({phone})
-        <button type="button" onClick={() => setSelectedMembers(selectedMembers.filter((p) => p !== phone))}>✕</button>
-      </span>
-    );
-  })}
-</div>
 
-<div className="member-dropdown">
-  {stMembers.filter((m) => !selectedMembers.includes(m.phone)).map((member) => (
-    <div key={member.phone} className="dropdown-item"
-      onClick={() => setSelectedMembers([...selectedMembers, member.phone])}>
-      {member.name} ({member.phone})
-    </div>
-  ))}
-</div>
+        <div className="selected-members">
+          {selectedMembers.map((phone) => {
+            const member = stMembers.find((m) => m.phone === phone);
+            return (
+              <span key={phone} className="tag">
+                {member?.name} ({phone})
+                <button type="button" onClick={() => setSelectedMembers(selectedMembers.filter((p) => p !== phone))}>✕</button>
+              </span>
+            );
+          })}
+        </div>
+
+        <div className="member-dropdown">
+          {stMembers.filter((m) => !selectedMembers.includes(m.phone)).map((member) => (
+            <div key={member.phone} className="dropdown-item"
+              onClick={() => setSelectedMembers([...selectedMembers, member.phone])}>
+              {member.name} ({member.phone})
+            </div>
+          ))}
+        </div>
 
         <ul className="actionBtns">
           <li><button type="submit" className="m-button">Save</button></li>
@@ -455,37 +511,66 @@ selectedMembers.forEach(async (memberPhone) => {
 )}
 
 
-          <div className='container eventList'>
-            {eventList ? eventList?.map(doc => (
-              <div key={doc.id} className='meetingBox'>
-                {doc.momUrl ? <span className='meetingLable2'>Done</span> : <span className='meetingLable'>Current Meeting</span>}
-                <div className='meetingDetails'>
-                  <h3 className="eventName">{doc ? doc.name : 'Users not found'}</h3>
-                </div>
-                <div className='meetingBoxFooter'>
-                  <div className='viewDetails'>
-                    <Link href={`events/${doc.uniqueId}`}>View Details</Link>
-                  </div>
-                  {
-                    doc.momUrl ? (
-                      <div className="momLink">
-                        <a href={doc.momUrl} target="_blank" rel="noopener noreferrer">
-                          <span>MOM</span>
-                        </a>
-                      </div>
-                    ) : (
-                      <div className="meetingLink">
-                        <a href={doc?.zoomLink} target="_blank" rel="noopener noreferrer">
-                          <span>Join Meeting</span>
-                        </a>
-                      </div>
-                    )
-                  }
-                </div>
-              </div>
-            )) : <div className='loader'><span className="loader2"></span></div>}
-            <HeaderNav />
+
+         <div className="container eventList">
+  {eventList ? (
+    eventList.map((doc) => (
+      <div
+        key={doc.id}
+        className="meetingBox"
+        onClick={() => window.location.href = `/events/${doc.uniqueId}`}
+      >
+        {doc.momUrl ? (
+          <span className="meetingLable2">Done</span>
+        ) : (
+          <span className="meetingLable">Upcoming Meeting</span>
+        )}
+        <div className="meetingDetails">
+          <h3 className="eventName">{doc ? doc.name : "Users not found"}</h3>
+        </div>
+        <div className="meetingBoxFooter">
+          <div className="viewDetails">
+            <Link
+              href={`events/${doc.uniqueId}`}
+              onClick={(e) => e.stopPropagation()} // ✅ prevents double navigation
+            >
+              View Details
+            </Link>
           </div>
+          {doc.momUrl ? (
+            <div className="momLink">
+              <a
+                href={doc.momUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()} // ✅ only open MOM
+              >
+                <span>MOM</span>
+              </a>
+            </div>
+          ) : (
+            <div className="meetingLink">
+              <a
+                href={doc?.zoomLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()} // ✅ only open Zoom
+              >
+                <span>Join Meeting</span>
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    ))
+  ) : (
+    <div className="loader">
+      <span className="loader2"></span>
+    </div>
+  )}
+  <HeaderNav />
+</div>
+
         </section>
       </main>
     </>
