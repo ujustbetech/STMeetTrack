@@ -1021,7 +1021,7 @@ className='actionBtn blueclr'
             <div className='logoContainer'>
               <img src="/logo.png" alt="Logo" className="logos" />
             </div>
-            <p>ST Arena</p>
+            <p>Meeting Management Tool</p>
             <form onSubmit={handleLogin}>
               <ul>
                 <li>
@@ -1132,3 +1132,4 @@ className='actionBtn blueclr'
     </>
   );
 }
+
