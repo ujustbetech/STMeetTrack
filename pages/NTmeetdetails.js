@@ -13,6 +13,7 @@ const HomePage = () => {
   const router = useRouter();
   const [showpopup, setshowpopup] = useState(false); 
   const { id } = router.query;
+  
   const [phoneNumber, setPhoneNumber] = useState('');
   const [value, setValue] = React.useState(0);
   const [error, setError] = useState(null);
@@ -96,42 +97,47 @@ useEffect(() => {
 }, []);
 
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    const getNTEventList = async () => {
-      try {
-        const eventCollection = collection(db, "STmeet");
-        const eventSnapshot = await getDocs(eventCollection);
-        const eventList = eventSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+const handleLogin = async (e) => {
+  e.preventDefault();
 
-        eventList.sort((a, b) => b.time.seconds - a.time.seconds);
-        setEventList(eventList);
-      } catch (err) {
-        console.error("Error fetching team members:", err);
-      }
-    };
-
+  const getNTEventList = async () => {
     try {
-      const response = await axios.post('https://api.ujustbe.com/mobile-check', {
-        MobileNo: phoneNumber,
-      });
+      const eventCollection = collection(db, "STmeet");
+      const eventSnapshot = await getDocs(eventCollection);
+      const eventList = eventSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-      if (response.data.message[0].type === 'SUCCESS') {
-        localStorage.setItem('stnumber', phoneNumber);
-        setIsLoggedIn(true);
-        fetchUserName(phoneNumber);
-        getNTEventList();
-        setLoading(false);
-      } else {
-        setError('Phone number not registered.');
-      }
+      // Sort by latest date
+      eventList.sort((a, b) => b.time.seconds - a.time.seconds);
+      setEventList(eventList);
+      console.log("Sorted events", eventList);
     } catch (err) {
-      setError('Login failed. Please try again.');
+      console.error("Error fetching events:", err);
     }
   };
+
+  try {
+    const docRef = doc(db, "STMembers", phoneNumber);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      console.log('✅ Phone number found in NTMembers');
+
+      localStorage.setItem('stnumber', phoneNumber);
+      setIsLoggedIn(true);
+      fetchUserName(phoneNumber);
+      getNTEventList();
+      setLoading(false);
+    } else {
+      setError('You are not a ST Member.');
+    }
+  } catch (err) {
+    console.error('❌ Error checking phone number:', err);
+    setError('Login failed. Please try again.');
+  }
+};
 
   const fetchUserName = async (phoneNumber) => {
     const userRef = doc(db, 'STMembers', phoneNumber);
@@ -198,10 +204,9 @@ useEffect(() => {
     minute: "2-digit",
   });
 };
-
-const sendWhatsAppMessage = async (userName, eventName, eventDate, eventLink, phoneNumber) => {
-const ACCESS_TOKEN = 'EAAHwbR1fvgsBOwUInBvR1SGmVLSZCpDZAkn9aZCDJYaT0h5cwyiLyIq7BnKmXAgNs0ZCC8C33UzhGWTlwhUarfbcVoBdkc1bhuxZBXvroCHiXNwZCZBVxXlZBdinVoVnTB7IC1OYS4lhNEQprXm5l0XZAICVYISvkfwTEju6kV4Aqzt4lPpN8D3FD7eIWXDhnA4SG6QZDZD'; // Replace with your Meta API token
-    const PHONE_NUMBER_ID = '527476310441806';
+const sendWhatsAppMessage = async (userName, eventName, eventDate, zoomLink, eventId, phoneNumber) => {
+  const ACCESS_TOKEN = 'EAAHwbR1fvgsBOwUInBvR1SGmVLSZCpDZAkn9aZCDJYaT0h5cwyiLyIq7BnKmXAgNs0ZCC8C33UzhGWTlwhUarfbcVoBdkc1bhuxZBXvroCHiXNwZCZBVxXlZBdinVoVnTB7IC1OYS4lhNEQprXm5l0XZAICVYISvkfwTEju6kV4Aqzt4lPpN8D3FD7eIWXDhnA4SG6QZDZD'; // Replace with your Meta API token
+    const PHONE_NUMBER_ID = '527476310441806';    // replace with yours
   const url = `https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages`;
 
   const messageData = {
@@ -209,17 +214,26 @@ const ACCESS_TOKEN = 'EAAHwbR1fvgsBOwUInBvR1SGmVLSZCpDZAkn9aZCDJYaT0h5cwyiLyIq7B
     to: phoneNumber,
     type: "template",
     template: {
-      name: "registration_link", // must match approved template name in Meta
+      name: "mmt_invite", // ✅ must match your template name in Meta
       language: { code: "en" },
       components: [
         {
           type: "body",
           parameters: [
-            { type: "text", text: userName },
-            { type: "text", text: eventName },
-            { type: "text", text: formatEventDate(eventDate) },
-            { type: "text", text: eventLink },
+            { type: "text", text: userName },               // {{1}} in body
+            { type: "text", text: eventName },              // {{2}}
+            { type: "text", text: formatEventDate(eventDate) }, // {{3}}
+            { type: "text", text: zoomLink },               // {{4}}
           ],
+        },
+        {
+          type: "button",
+          sub_type: "url",
+          index: "0", // first button
+     parameters: [
+  { type: "text", text: eventId }, // ✅ only send the ID
+],
+
         },
       ],
     },
@@ -236,11 +250,15 @@ const ACCESS_TOKEN = 'EAAHwbR1fvgsBOwUInBvR1SGmVLSZCpDZAkn9aZCDJYaT0h5cwyiLyIq7B
     });
 
     const data = await response.json();
-    console.log("✅ WhatsApp Message Sent:", data);
+    console.log("✅ WhatsApp message sent:", data);
   } catch (error) {
     console.error("❌ Error sending WhatsApp message:", error);
   }
 };
+
+
+
+
 
  // ✅ Handle event creation (Users → STmeet with WhatsApp invite)
 const handleCreateEvent = async (e) => {
@@ -257,23 +275,32 @@ const handleCreateEvent = async (e) => {
     const eventDocRef = doc(stMeetRef, uniqueId);
 
     await setDoc(eventDocRef, {
-      name: eventName,
-      time: Timestamp.fromDate(new Date(eventTime)),
-      agenda: agendaPoints,
-      zoomLink,
-      uniqueId,
-      createdBy: phoneNumber,
-      invitedMembers: selectedMembers, // array of chosen ST members
-      createdAt: Timestamp.now(),
-    });
-
-    // Call Meta API to send WhatsApp message
-selectedMembers.forEach(async (memberPhone) => {
-  const member = stMembers.find((m) => m.phone === memberPhone);
-  const memberName = member?.name || "Member"; // fallback if not found
-
-  await sendWhatsAppMessage(memberName, eventName, eventTime, zoomLink, memberPhone);
+  name: eventName,
+  time: Timestamp.fromDate(new Date(eventTime)),
+  agenda: agendaPoints,
+  zoomLink,
+  uniqueId,  // <-- this is the eventId
+  createdBy: phoneNumber,
+  invitedMembers: selectedMembers,
+  createdAt: Timestamp.now(),
 });
+
+for (const memberPhone of selectedMembers) {
+  const member = stMembers.find((m) => m.phone === memberPhone);
+  const memberName = member?.name || "Member"; 
+
+  await sendWhatsAppMessage(
+    memberName,
+    eventName,
+    eventTime,
+    zoomLink,
+    uniqueId,
+    memberPhone
+  );
+}
+
+
+ 
 
 
     Swal.fire("✅ Your event has been created & invitations sent");

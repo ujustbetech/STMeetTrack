@@ -25,7 +25,7 @@ export default function EventDetailsPage() {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [description, setDescription] = useState('');
   const { tab } = router.query;
-  
+    const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
   const [eventInfo, setEventInfo] = useState(null);
   const [users, setUsers] = useState([]);
@@ -33,13 +33,14 @@ export default function EventDetailsPage() {
   const [timeLeft, setTimeLeft] = useState(null);
   const [suggestion, setSuggestion] = useState(null);
   const [subtasks, setSubtasks] = useState([]);
+    const [phoneNumber, setPhoneNumber] = useState('');
   const [comments, setComments] = useState([]);
   const [error, setError] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [commentTexts, setCommentTexts] = useState({});
   const [ntMembers, setNtMembers] = useState([]);
   const [subTaskTexts, setSubTaskTexts] = useState({});
-
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState(null);
   const filteredSubtasks = subtasks.filter(
     (sub) => sub.parentId === id
@@ -137,6 +138,18 @@ const handleCommentSubmit = async () => {
 
     fetchDocuments();
   }, [id]);
+  useEffect(() => {
+    const storedPhoneNumber = localStorage.getItem("stnumber");
+    setPhoneNumber(storedPhoneNumber);
+  
+    if (storedPhoneNumber) {
+     
+      setIsLoggedIn(true);
+      setLoading(false);
+      fetchUserName(storedPhoneNumber);
+  
+    }
+  }, []);
   const handleUpload = async () => {
     if (!file) return alert("Please select a file");
 
@@ -167,6 +180,48 @@ const handleCommentSubmit = async () => {
       setUploading(false);
     }
   };
+
+const handleLogin = async (e) => {
+  e.preventDefault();
+
+  const getNTEventList = async () => {
+    try {
+      const eventCollection = collection(db, "STmeet");
+      const eventSnapshot = await getDocs(eventCollection);
+      const eventList = eventSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Sort by latest date
+  
+     
+    
+    } catch (err) {
+      console.error("Error fetching events:", err);
+    }
+  };
+
+  try {
+    const docRef = doc(db, "STMembers", phoneNumber);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      console.log('✅ Phone number found in NTMembers');
+
+      localStorage.setItem('stnumber', phoneNumber);
+      setIsLoggedIn(true);
+      fetchUserName(phoneNumber);
+      getNTEventList();
+      setLoading(false);
+    } else {
+      setError('You are not a ST Member.');
+    }
+  } catch (err) {
+    console.error('❌ Error checking phone number:', err);
+    setError('Login failed. Please try again.');
+  }
+};
 
 
 useEffect(() => {
@@ -958,6 +1013,37 @@ className='actionBtn blueclr'
     }
   };
 
+  if (!isLoggedIn) {
+    return (
+      <div className='mainContainer signInBox'>
+        <div className="signin">
+          <div className="loginInput">
+            <div className='logoContainer'>
+              <img src="/logo.png" alt="Logo" className="logos" />
+            </div>
+            <p>ST Arena</p>
+            <form onSubmit={handleLogin}>
+              <ul>
+                <li>
+                  <input
+                    type="text"
+                    placeholder="Enter your phone number"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    required
+                  />
+                </li>
+                <li>
+                  <button className="login" type="submit">Login</button>
+                </li>
+              </ul>
+            </form>
+          </div>
+          {error && <p style={{ color: 'red' }}>{error}</p>}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

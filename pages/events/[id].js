@@ -459,17 +459,17 @@ const handleLogout = () => {
 
   if (!isLoggedIn) {
     return (
-      <div className='mainContainer signInBox'>
+        <div className='mainContainer signInBox'>
         {/* <div className='logosContainer'>
           <img src="/ujustlogo.png" alt="Logo" className="logo" />
         </div> */}
         <div className="signin">
           <div className="loginInput">
-            <div className='logoContainer' >
+            <div className='logoContainer'>
               <img src="/logo.png" alt="Logo" className="logos" />
 
             </div>
-            <p>NT Arena</p>
+            <p>Meeting Management Tool </p>
             <form onSubmit={handleLogin}>
               <ul>
                 <li>

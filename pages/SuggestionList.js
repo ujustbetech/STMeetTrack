@@ -24,6 +24,7 @@ const SuggestionList = () => {
    const [showpopup, setshowpopup] = useState(false); 
   const [userName, setUserName] = useState('');
    const router = useRouter();
+   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [commentTexts, setCommentTexts] = useState({}); // store comment text per suggestion
 const [isModalOpen, setIsModalOpen] = useState(false);
 const [activeSuggestionId, setActiveSuggestionId] = useState(null);
@@ -34,8 +35,10 @@ const [filteredFeedback, setFilteredFeedback] = useState([]);
 const [selectedFilter, setSelectedFilter] = useState("All");
 const [activeIndex, setActiveIndex] = useState(0);
 const [suggestionText, setSuggestionText] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState('');
 const [loading, setLoading] = useState(true);
  const filterRef = useRef(null);
+   const [error, setError] = useState(null);
 const fetchSuggestions = async () => {
   setLoading(true);
   try {
@@ -104,7 +107,54 @@ const submitAddFeedback = async () => {
     console.error("Error adding suggestion:", error);
   }
 };
+useEffect(() => {
+  const storedPhoneNumber = localStorage.getItem("stnumber");
+  setPhoneNumber(storedPhoneNumber);
 
+  if (storedPhoneNumber) {
+   
+    setIsLoggedIn(true);
+    setLoading(false);
+    fetchUserName(storedPhoneNumber);
+
+  }
+}, []);
+const handleLogin = async (e) => {
+  e.preventDefault();
+
+  const getNTEventList = async () => {
+    try {
+      const eventCollection = collection(db, "STmeet");
+      const eventSnapshot = await getDocs(eventCollection);
+     
+
+      // Sort by latest date
+    
+    } catch (err) {
+      console.error("Error fetching events:", err);
+    }
+  };
+
+  try {
+    const docRef = doc(db, "STMembers", phoneNumber);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      console.log('✅ Phone number found in NTMembers');
+
+      localStorage.setItem('stnumber', phoneNumber);
+      setIsLoggedIn(true);
+      fetchUserName(phoneNumber);
+      getNTEventList();
+      setLoading(false);
+    } else {
+      setError('You are not a ST Member.');
+    }
+  } catch (err) {
+    console.error('❌ Error checking phone number:', err);
+    setError('Login failed. Please try again.');
+  }
+};
 const handleClick = (index, filter) => {
   setActiveIndex(index);
   setSelectedFilter(filter);
@@ -242,7 +292,37 @@ const handleLogout = () => {
   };
   
   
-
+if (!isLoggedIn) {
+    return (
+      <div className='mainContainer signInBox'>
+        <div className="signin">
+          <div className="loginInput">
+            <div className='logoContainer'>
+              <img src="/logo.png" alt="Logo" className="logos" />
+            </div>
+            <p>ST Arena</p>
+            <form onSubmit={handleLogin}>
+              <ul>
+                <li>
+                  <input
+                    type="text"
+                    placeholder="Enter your phone number"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    required
+                  />
+                </li>
+                <li>
+                  <button className="login" type="submit">Login</button>
+                </li>
+              </ul>
+            </form>
+          </div>
+          {error && <p style={{ color: 'red' }}>{error}</p>}
+        </div>
+      </div>
+    );
+  }
   return (
       <main className="pageContainer">
       <header className='Main m-Header'>
